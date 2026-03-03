@@ -56,3 +56,7 @@ flutter_rust_bridge = ["dep:flutter_rust_bridge"]
 [[bench]]
 name = "argon2_bench"
 harness = false
+
+[lints.rust]
+# frb_expand is an internal flutter_rust_bridge cfg key used during codegen
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(frb_expand)'] }
