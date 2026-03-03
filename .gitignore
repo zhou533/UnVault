@@ -1,0 +1,84 @@
+# ===== Rust =====
+rust/target/
+**/*.rs.bk
+
+# ===== Flutter / Dart =====
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+
+# Flutter generated
+lib/generated_plugin_registrant.dart
+lib/src/**/*.g.dart
+lib/src/**/*.freezed.dart
+lib/src/**/*.drift.dart
+
+# flutter_rust_bridge generated (commit to VCS per CLAUDE.md, but keep pattern ready)
+# lib/src/core/bridge/
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.orig
+
+# ===== Security — NEVER commit =====
+*.env
+.env.*
+*.pem
+*.key
+*.p12
+*.keystore
+*.jks
+credentials.json
+secrets.json
+service-account*.json
+
+# ===== Build & CI =====
+*.log
+coverage/
+.gradle/
+local.properties
+key.properties
+
+# ===== Android =====
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+
+# ===== iOS =====
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Runner.xcworkspace/xcshareddata/
+ios/Runner.xcodeproj/project.xcworkspace/
+
+# ===== Misc =====
+*.dump
+*.sqlite
+*.db
+!rust/Cargo.lock
