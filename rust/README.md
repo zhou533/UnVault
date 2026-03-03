@@ -14,6 +14,15 @@ rust/src/
 │   ├── argon2.rs           # Argon2id 密码→密钥派生
 │   ├── encryption.rs       # AES-256-GCM 加解密
 │   └── memory.rs           # 内存安全工具
+├── wallet/
+│   └── manager.rs          # 钱包创建/导入/解密/账户派生
+├── transaction/
+│   ├── builder.rs          # EIP-1559 交易构建
+│   └── signer.rs           # 交易签名（私钥不出 Rust）
+├── api/
+│   ├── crypto_api.rs       # FFI 薄包装：助记词、加密、Argon2
+│   ├── wallet_api.rs       # FFI 薄包装：钱包生命周期
+│   └── transaction_api.rs  # FFI 薄包装：交易签名
 └── models/
     └── mod.rs              # 共享类型（Address、ChainConfig）
 ```
@@ -67,14 +76,64 @@ rust/src/
 
 在 iOS 沙箱等受限环境中，mlock 失败会优雅降级（zeroize 仍然有效）。
 
+### 钱包管理 (`wallet::manager`)
+
+钱包完整生命周期管理，编排 crypto 模块完成业务流程。
+
+- `create_wallet(password, word_count)` — 生成助记词 → Argon2id 派生密钥 → AES-GCM 加密 → 派生首个账户
+- `import_wallet(phrase_bytes, password)` — 验证助记词 → 加密存储 → 派生首个账户
+- `decrypt_mnemonic(password, encrypted, salt, params)` — 解密并验证助记词（用于备份展示）
+- `derive_accounts_from_mnemonic(phrase_bytes, count)` — 从助记词批量派生账户地址
+
+### 交易构建 (`transaction::builder`)
+
+EIP-1559 交易构建与参数验证。
+
+- `build_eip1559(params)` — 从 `TransactionParams` 构建未签名交易
+- `TransactionParams::validate()` — 验证 chain_id、gas_limit、fee 等参数合法性
+
+支持普通转账和合约创建（`to` 为 None 时）。
+
+### 交易签名 (`transaction::signer`)
+
+在 Rust 层完成交易签名，私钥绝不跨越 FFI 边界。
+
+- `sign_eip1559(private_key, tx)` — 签名并返回 RLP 编码的原始交易（可直接广播）
+
+返回 `SignedTransaction`：`raw_tx`（广播用）、`tx_hash`、`from` 地址。签名后密钥副本立即 zeroize。
+
+### FFI API 层 (`api/`)
+
+暴露给 Flutter/Dart 的薄包装层，只做参数转换和错误映射，不含业务逻辑。
+
+**安全约束**：敏感数据（助记词、密钥、密码）全部以 `Vec<u8>` 传递，绝不使用 `String`。非敏感数据（地址、交易哈希）可用 `String`。
+
+- `crypto_api` — 助记词生成/验证、种子派生、salt 生成、Argon2id 密钥派生、AES-GCM 加解密
+- `wallet_api` — 钱包创建/导入、助记词解密、账户派生
+- `transaction_api` — 交易签名（接收私钥 + 交易参数，返回签名后原始交易）
+
 ### 错误类型 (`error`)
 
-通过 `thiserror` 实现的统一错误枚举 `UnvaultError`，覆盖所有加密操作的错误场景。错误信息**绝不包含**私钥、助记词等敏感数据。实现 `Send + Sync`，适配 FFI 场景。
+通过 `thiserror` 实现的统一错误枚举 `UnvaultError`，覆盖所有操作的错误场景。错误信息**绝不包含**私钥、助记词等敏感数据。实现 `Send + Sync`，适配 FFI 场景。
+
+| 错误变体 | 场景 |
+|----------|------|
+| `InvalidMnemonic` | 助记词无效 |
+| `MnemonicGeneration` | 助记词生成失败 |
+| `KeyDerivation` | HD 密钥派生失败 |
+| `Argon2Derivation` | Argon2id 派生失败 |
+| `InvalidArgon2Params` | 参数低于安全下限 |
+| `Encryption` / `DecryptionFailed` | 加解密失败 |
+| `InvalidKeyLength` | 密钥长度不正确 |
+| `MemoryLock` | mlock 操作失败 |
+| `TransactionBuild` | 交易构建参数无效 |
+| `TransactionSign` | 交易签名失败 |
+| `WalletOperation` | 钱包操作失败 |
 
 ### 共享类型 (`models`)
 
 - 重导出 `alloy_primitives::Address`（EIP-55 校验和地址）
-- `ChainConfig` — 链配置占位类型（Phase 2 多链支持）
+- `ChainConfig` — 链配置（Mainnet、Sepolia，Phase 2 扩展多链）
 
 ## 安全规则
 
@@ -83,6 +142,8 @@ rust/src/
 3. 敏感类型无 `Debug` / `Display` 实现，防止意外日志泄露
 4. FFI 边界仅传递 `Vec<u8>` / `&[u8]`，绝不传递 `String`
 5. 错误信息不包含任何敏感数据
+6. 交易签名全部在 Rust 层完成，签名后的 raw tx 才返回 Dart
+7. 私钥副本在签名完成后立即 zeroize
 
 ## 运行测试
 
@@ -102,6 +163,12 @@ cargo test --lib crypto::key_derivation
 cargo test --lib crypto::argon2
 cargo test --lib crypto::encryption
 cargo test --lib crypto::memory
+cargo test --lib wallet::manager
+cargo test --lib transaction::builder
+cargo test --lib transaction::signer
+cargo test --lib api::crypto_api
+cargo test --lib api::wallet_api
+cargo test --lib api::transaction_api
 
 # 代码格式检查
 cargo fmt --check
@@ -122,15 +189,21 @@ cargo bench
 
 | 模块 | 测试数 |
 |------|--------|
-| error | 12 |
+| error | 15 |
 | memory | 9 |
 | encryption | 14（含 proptest） |
 | mnemonic | 15 |
 | argon2 | 14（含 proptest） |
 | key_derivation | 13 |
 | models | 3 |
+| wallet/manager | 12 |
+| transaction/builder | 9 |
+| transaction/signer | 5 |
+| api/crypto_api | 11 |
+| api/wallet_api | 6 |
+| api/transaction_api | 5 |
 | 集成测试 | 6 |
-| **合计** | **87** (含 1 慢速 proptest) |
+| **合计** | **132** |
 
 ## 依赖说明
 
@@ -139,10 +212,14 @@ cargo bench
 | `coins-bip39` | BIP-39 助记词生成与验证 |
 | `coins-bip32` | BIP-32/44 HD 密钥派生 |
 | `alloy-primitives` | 以太坊地址（EIP-55）、keccak256 |
+| `alloy-consensus` | EIP-1559 交易类型与 RLP 编码 |
+| `alloy-network` | 交易签名 trait (`TxSignerSync`) |
+| `alloy-signer` / `alloy-signer-local` | 本地私钥签名 |
 | `argon2` | Argon2id 密码→密钥派生 |
 | `aes-gcm` | AES-256-GCM 对称加密 |
 | `secrecy` | `SecretBox<T>` 敏感数据封装 |
 | `zeroize` | 内存归零（drop 时自动清除） |
+| `serde` | 序列化（alloy-consensus 依赖） |
 | `flutter_rust_bridge` | FFI 桥接（可选，feature-gated） |
 
 ## 构建要求
