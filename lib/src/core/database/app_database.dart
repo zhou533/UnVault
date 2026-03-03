@@ -18,4 +18,11 @@ class AppDatabase extends _$AppDatabase {
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'unvault');
   }
+
+  Future<int> walletCount() {
+    return customSelect(
+      'SELECT COUNT(*) AS count FROM wallets',
+      readsFrom: {wallets},
+    ).map((row) => row.read<int>('count')).getSingle();
+  }
 }
