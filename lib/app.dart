@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:unvault/src/features/auth/application/auth_notifier.dart';
 import 'package:unvault/src/localization/generated/app_localizations.dart';
 import 'package:unvault/src/routing/app_router.dart';
 
@@ -10,6 +12,11 @@ class UnVaultApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+
+    // Trigger auth state check after first frame
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      ref.read(authProvider.notifier).checkAuthState();
+    });
 
     return MaterialApp.router(
       title: 'UnVault',

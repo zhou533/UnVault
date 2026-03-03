@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:unvault/src/features/auth/application/auth_notifier.dart';
+import 'package:unvault/src/features/auth/domain/auth_state.dart';
 import 'package:unvault/src/features/auth/presentation/biometric_setup_screen.dart';
 import 'package:unvault/src/features/auth/presentation/lock_screen.dart';
 import 'package:unvault/src/features/auth/presentation/set_password_screen.dart';
@@ -24,8 +26,20 @@ part 'app_router.g.dart';
 
 @riverpod
 GoRouter router(Ref ref) {
+  final authState = ref.watch(authProvider);
+
   return GoRouter(
     initialLocation: '/lock',
+    redirect: (context, routerState) {
+      final location = routerState.matchedLocation;
+      return authState.maybeWhen(
+        loading: () => null,
+        firstLaunch: () =>
+            location != '/set-password' ? '/set-password' : null,
+        unlocked: () => location == '/lock' ? '/wallets' : null,
+        orElse: () => location == '/wallets' ? '/lock' : null,
+      );
+    },
     routes: [
       GoRoute(
         path: '/lock',
