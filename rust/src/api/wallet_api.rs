@@ -3,8 +3,6 @@
 //! Thin wrappers over wallet domain module. Handles parameter conversion
 //! and error mapping for the FFI boundary.
 
-#![allow(dead_code)]
-
 use secrecy::ExposeSecret;
 
 use crate::error::{Result, UnvaultError};
@@ -45,6 +43,7 @@ pub fn create_wallet(
 }
 
 /// Response from wallet creation — all data needed for storage and display.
+#[flutter_rust_bridge::frb]
 pub struct WalletCreationResponse {
     /// Encrypted mnemonic (nonce || ciphertext || tag).
     pub encrypted_mnemonic: Vec<u8>,
@@ -85,6 +84,7 @@ pub fn import_wallet(
 }
 
 /// Response from wallet import.
+#[flutter_rust_bridge::frb]
 pub struct WalletImportResponse {
     pub encrypted_mnemonic: Vec<u8>,
     pub salt: Vec<u8>,
@@ -130,6 +130,7 @@ pub fn decrypt_mnemonic(
 /// `count`: number of accounts to derive (0-based sequential).
 ///
 /// Returns: list of EIP-55 checksummed addresses (non-sensitive, safe as String).
+#[flutter_rust_bridge::frb(sync)]
 pub fn derive_accounts(
     phrase_bytes: Vec<u8>,
     count: u32,

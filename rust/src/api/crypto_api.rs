@@ -3,8 +3,6 @@
 //! Thin wrappers over domain modules. All sensitive data crosses the FFI
 //! boundary as `Vec<u8>` / `Uint8List` — NEVER as String.
 
-#![allow(dead_code)]
-
 use secrecy::ExposeSecret;
 
 use crate::crypto::{argon2, encryption, mnemonic};
@@ -17,6 +15,7 @@ use crate::error::{Result, UnvaultError};
 /// Returns: mnemonic phrase as UTF-8 bytes (space-separated words).
 ///
 /// SECURITY: The caller receives raw bytes — must be zeroized after use on the Dart side.
+#[flutter_rust_bridge::frb(sync)]
 pub fn generate_mnemonic(word_count: u8) -> Result<Vec<u8>> {
     let wc = match word_count {
         12 => mnemonic::WordCount::Words12,
@@ -33,6 +32,7 @@ pub fn generate_mnemonic(word_count: u8) -> Result<Vec<u8>> {
 /// `phrase_bytes`: mnemonic phrase as UTF-8 bytes.
 ///
 /// Returns: `true` if valid.
+#[flutter_rust_bridge::frb(sync)]
 pub fn validate_mnemonic(phrase_bytes: Vec<u8>) -> Result<bool> {
     match mnemonic::validate(&phrase_bytes) {
         Ok(()) => Ok(true),
@@ -52,6 +52,7 @@ pub fn derive_seed(phrase_bytes: Vec<u8>, passphrase: Vec<u8>) -> Result<Vec<u8>
 }
 
 /// Generates a random 16-byte salt for Argon2id.
+#[flutter_rust_bridge::frb(sync)]
 pub fn generate_salt() -> Vec<u8> {
     argon2::generate_salt().to_vec()
 }
@@ -100,6 +101,7 @@ pub fn calibrate_argon2(target_min_ms: u64, target_max_ms: u64) -> Result<(u32, 
 /// `plaintext`: data to encrypt.
 ///
 /// Returns: `nonce(12) || ciphertext || tag(16)`.
+#[flutter_rust_bridge::frb(sync)]
 pub fn encrypt(key: Vec<u8>, plaintext: Vec<u8>) -> Result<Vec<u8>> {
     encryption::encrypt(&key, &plaintext)
 }
@@ -110,6 +112,7 @@ pub fn encrypt(key: Vec<u8>, plaintext: Vec<u8>) -> Result<Vec<u8>> {
 /// `ciphertext`: data as produced by `encrypt`.
 ///
 /// Returns: decrypted plaintext bytes.
+#[flutter_rust_bridge::frb(sync)]
 pub fn decrypt(key: Vec<u8>, ciphertext: Vec<u8>) -> Result<Vec<u8>> {
     encryption::decrypt(&key, &ciphertext)
 }

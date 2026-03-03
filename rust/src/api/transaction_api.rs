@@ -3,8 +3,6 @@
 //! SECURITY: Private keys are passed as `Vec<u8>` and never leave the Rust layer.
 //! Only the signed raw transaction bytes are returned to Dart.
 
-#![allow(dead_code)]
-
 use alloy_primitives::{Address, U256};
 
 use crate::error::{Result, UnvaultError};
@@ -79,6 +77,7 @@ pub fn sign_transaction(
 }
 
 /// Response from signing a transaction.
+#[flutter_rust_bridge::frb]
 pub struct SignTransactionResponse {
     /// RLP-encoded signed transaction bytes (ready for `eth_sendRawTransaction`).
     pub raw_tx: Vec<u8>,
