@@ -15,6 +15,13 @@ flutter_rust_bridge = { version = "2", optional = true }
 # Ethereum primitives (lightweight: Address with EIP-55)
 alloy-primitives = "1.1"
 
+# Ethereum transaction types and signing
+alloy-consensus = "1"
+alloy-network = "1"
+alloy-signer = "1"
+alloy-signer-local = "1"
+k256 = { version = "0.13", features = ["ecdsa"] }
+
 # BIP standards (coins ecosystem, compatible with alloy internals)
 coins-bip32 = { version = "0.12", default-features = false }
 coins-bip39 = { version = "0.12", default-features = false, features = ["english"] }
@@ -28,6 +35,9 @@ rand = "0.8"
 zeroize = { version = "1", features = ["derive"] }
 secrecy = "0.10"
 libc = "0.2"
+
+# Serialization (required by alloy-consensus)
+serde = { version = "1", features = ["derive"] }
 
 # Error handling
 thiserror = "1"

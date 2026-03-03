@@ -40,6 +40,17 @@ pub enum UnvaultError {
     // -- Memory errors --
     #[error("memory lock failed: {0}")]
     MemoryLock(String),
+
+    // -- Transaction errors --
+    #[error("transaction build failed: {0}")]
+    TransactionBuild(String),
+
+    #[error("transaction signing failed: {0}")]
+    TransactionSign(String),
+
+    // -- Wallet errors --
+    #[error("wallet operation failed: {0}")]
+    WalletOperation(String),
 }
 
 /// Result type alias for unvault-core operations.
@@ -107,6 +118,24 @@ mod tests {
     fn error_display_memory_lock() {
         let err = UnvaultError::MemoryLock("operation not permitted".into());
         assert_eq!(err.to_string(), "memory lock failed: operation not permitted");
+    }
+
+    #[test]
+    fn error_display_transaction_build() {
+        let err = UnvaultError::TransactionBuild("chain_id must be non-zero".into());
+        assert_eq!(err.to_string(), "transaction build failed: chain_id must be non-zero");
+    }
+
+    #[test]
+    fn error_display_transaction_sign() {
+        let err = UnvaultError::TransactionSign("invalid private key".into());
+        assert_eq!(err.to_string(), "transaction signing failed: invalid private key");
+    }
+
+    #[test]
+    fn error_display_wallet_operation() {
+        let err = UnvaultError::WalletOperation("wallet not found".into());
+        assert_eq!(err.to_string(), "wallet operation failed: wallet not found");
     }
 
     #[test]
