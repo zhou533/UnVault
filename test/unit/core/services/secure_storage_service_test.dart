@@ -18,8 +18,12 @@ void main() {
 
   group('storeWalletCredentials', () {
     test('writes all fields under namespaced keys', () async {
-      when(() => mockStorage.write(key: any(named: 'key'), value: any(named: 'value')))
-          .thenAnswer((_) async {});
+      when(
+        () => mockStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((_) async {});
 
       await sut.storeWalletCredentials(
         walletId: 1,
@@ -39,7 +43,8 @@ void main() {
 
   group('readWalletCredentials', () {
     test('returns null when wallet not found', () async {
-      when(() => mockStorage.read(key: any(named: 'key'))).thenAnswer((_) async => null);
+      when(() => mockStorage.read(key: any(named: 'key')))
+          .thenAnswer((_) async => null);
 
       final result = await sut.readWalletCredentials(walletId: 999);
 

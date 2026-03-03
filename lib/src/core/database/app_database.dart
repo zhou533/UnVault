@@ -9,7 +9,10 @@ import 'package:unvault/src/core/database/tables/wallets_table.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Wallets, Accounts, Transactions, Networks], daos: [WalletsDao])
+@DriftDatabase(
+  tables: [Wallets, Accounts, Transactions, Networks],
+  daos: [WalletsDao],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -20,6 +23,7 @@ class AppDatabase extends _$AppDatabase {
     return driftDatabase(name: 'unvault');
   }
 
+  @override
   WalletsDao get walletsDao => WalletsDao(this);
 
   Future<int> walletCount() {

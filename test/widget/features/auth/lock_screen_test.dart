@@ -13,7 +13,8 @@ class _ErrorAuthNotifier extends AuthNotifier {
 }
 
 void main() {
-  testWidgets('lock screen has password field and unlock button', (tester) async {
+  testWidgets(
+      'lock screen has password field and unlock button', (tester) async {
     await tester.pumpApp(const LockScreen());
 
     expect(find.byType(TextField), findsOneWidget);
@@ -23,7 +24,7 @@ void main() {
   testWidgets('shows error message when auth fails', (tester) async {
     final container = ProviderContainer(
       overrides: [
-        authProvider.overrideWith(() => _ErrorAuthNotifier()),
+        authProvider.overrideWith(_ErrorAuthNotifier.new),
       ],
     );
 

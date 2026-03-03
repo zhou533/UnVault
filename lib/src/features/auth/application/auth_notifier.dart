@@ -1,5 +1,4 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:unvault/src/core/database/app_database.dart';
 import 'package:unvault/src/core/providers/app_providers.dart';
 import 'package:unvault/src/core/services/secure_storage_service.dart';
 import 'package:unvault/src/features/auth/data/auth_repository.dart';
@@ -27,7 +26,9 @@ class AuthNotifier extends _$AuthNotifier {
       walletId: walletId,
       passwordBytes: passwordBytes,
     );
-    state = ok ? const AuthState.unlocked() : const AuthState.error('Incorrect password');
+    state = ok
+        ? const AuthState.unlocked()
+        : const AuthState.error('Incorrect password');
   }
 
   void lock() {

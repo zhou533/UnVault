@@ -23,26 +23,51 @@ class SecureStorageService {
   }) async {
     final prefix = 'wallet_$walletId';
     await Future.wait([
-      _storage.write(key: '${prefix}_encrypted_mnemonic', value: base64.encode(encryptedMnemonic)),
-      _storage.write(key: '${prefix}_salt', value: base64.encode(salt)),
-      _storage.write(key: '${prefix}_argon2_memory', value: argon2MemoryKib.toString()),
-      _storage.write(key: '${prefix}_argon2_iterations', value: argon2Iterations.toString()),
-      _storage.write(key: '${prefix}_argon2_parallelism', value: argon2Parallelism.toString()),
+      _storage.write(
+        key: '${prefix}_encrypted_mnemonic',
+        value: base64.encode(encryptedMnemonic),
+      ),
+      _storage.write(
+        key: '${prefix}_salt',
+        value: base64.encode(salt),
+      ),
+      _storage.write(
+        key: '${prefix}_argon2_memory',
+        value: argon2MemoryKib.toString(),
+      ),
+      _storage.write(
+        key: '${prefix}_argon2_iterations',
+        value: argon2Iterations.toString(),
+      ),
+      _storage.write(
+        key: '${prefix}_argon2_parallelism',
+        value: argon2Parallelism.toString(),
+      ),
     ]);
   }
 
   /// Reads the wallet credentials, returns null if not found.
-  Future<WalletCredentials?> readWalletCredentials({required int walletId}) async {
+  Future<WalletCredentials?> readWalletCredentials({
+    required int walletId,
+  }) async {
     final prefix = 'wallet_$walletId';
-    final encMnemonic = await _storage.read(key: '${prefix}_encrypted_mnemonic');
+    final encMnemonic =
+        await _storage.read(key: '${prefix}_encrypted_mnemonic');
     if (encMnemonic == null) return null;
 
     final salt = await _storage.read(key: '${prefix}_salt');
     final memory = await _storage.read(key: '${prefix}_argon2_memory');
-    final iterations = await _storage.read(key: '${prefix}_argon2_iterations');
-    final parallelism = await _storage.read(key: '${prefix}_argon2_parallelism');
+    final iterations =
+        await _storage.read(key: '${prefix}_argon2_iterations');
+    final parallelism =
+        await _storage.read(key: '${prefix}_argon2_parallelism');
 
-    if (salt == null || memory == null || iterations == null || parallelism == null) return null;
+    if (salt == null ||
+        memory == null ||
+        iterations == null ||
+        parallelism == null) {
+      return null;
+    }
 
     return WalletCredentials(
       encryptedMnemonic: base64.decode(encMnemonic),

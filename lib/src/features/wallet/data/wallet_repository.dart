@@ -34,7 +34,7 @@ class WalletRepository {
   /// Creates a new wallet: calls Rust to generate mnemonic + encrypt it,
   /// stores encrypted bytes in secure storage, saves wallet row in DB.
   ///
-  /// Returns the new wallet's ID and the mnemonic bytes (must be zeroized by caller).
+  /// Returns the new wallet's ID and the mnemonic bytes (zeroized by caller).
   Future<WalletCreationResult> createWallet({
     required String name,
     required List<int> passwordBytes,
@@ -118,5 +118,6 @@ final class WalletCreationResult {
 
   final int walletId;
   final String firstAddress;
-  final Uint8List mnemonicBytes; // MUST be zeroized by caller after backup display
+  // MUST be zeroized by caller after backup display
+  final Uint8List mnemonicBytes;
 }

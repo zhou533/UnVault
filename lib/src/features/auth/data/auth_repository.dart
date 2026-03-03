@@ -38,7 +38,7 @@ class AuthRepository {
         parallelism: creds.argon2Parallelism,
       );
       return true;
-    } catch (_) {
+    } on Exception {
       return false;
     }
   }

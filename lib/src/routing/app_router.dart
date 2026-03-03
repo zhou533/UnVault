@@ -1,4 +1,6 @@
 
+import 'dart:typed_data';
+
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -48,24 +50,44 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: 'create',
             name: RouteNames.createWallet,
-            builder: (context, state) => const CreateWalletScreen(),
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              final password = extra?['password'] as String? ?? '';
+              return CreateWalletScreen(passwordBytes: password.codeUnits);
+            },
           ),
           GoRoute(
             path: 'import',
             name: RouteNames.importWallet,
-            builder: (context, state) => const ImportWalletScreen(),
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              final password = extra?['password'] as String? ?? '';
+              return ImportWalletScreen(passwordBytes: password.codeUnits);
+            },
           ),
         ],
       ),
       GoRoute(
         path: '/backup/show',
         name: RouteNames.backupShow,
-        builder: (context, state) => const ShowMnemonicScreen(),
+        builder: (context, state) {
+          final extra = state.extra! as Map<String, dynamic>;
+          return ShowMnemonicScreen(
+            walletId: extra['walletId'] as int,
+            mnemonicBytes: extra['mnemonicBytes'] as Uint8List,
+          );
+        },
       ),
       GoRoute(
         path: '/backup/verify',
         name: RouteNames.backupVerify,
-        builder: (context, state) => const VerifyMnemonicScreen(),
+        builder: (context, state) {
+          final extra = state.extra! as Map<String, dynamic>;
+          return VerifyMnemonicScreen(
+            walletId: extra['walletId'] as int,
+            words: (extra['words'] as List).cast<String>(),
+          );
+        },
       ),
       GoRoute(
         path: '/transfer/send',

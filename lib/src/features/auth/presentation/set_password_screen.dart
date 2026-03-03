@@ -52,7 +52,9 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
             TextField(
               controller: _passwordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password (min 8 chars)'),
+              decoration: const InputDecoration(
+                labelText: 'Password (min 8 chars)',
+              ),
             ),
             const SizedBox(height: 16),
             TextField(

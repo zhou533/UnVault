@@ -14,7 +14,8 @@ class WalletsDao extends DatabaseAccessor<AppDatabase> with _$WalletsDaoMixin {
     return (select(wallets)..where((w) => w.id.equals(id))).getSingleOrNull();
   }
 
-  Future<int> insertWallet(WalletsCompanion wallet) => into(wallets).insert(wallet);
+  Future<int> insertWallet(WalletsCompanion wallet) =>
+      into(wallets).insert(wallet);
 
   Future<void> markBackedUp(int id) async {
     await (update(wallets)..where((w) => w.id.equals(id)))
@@ -22,8 +23,9 @@ class WalletsDao extends DatabaseAccessor<AppDatabase> with _$WalletsDaoMixin {
   }
 
   Future<int> countWallets() {
-    return customSelect('SELECT COUNT(*) AS count FROM wallets', readsFrom: {wallets})
-        .map((row) => row.read<int>('count'))
-        .getSingle();
+    return customSelect(
+      'SELECT COUNT(*) AS count FROM wallets',
+      readsFrom: {wallets},
+    ).map((row) => row.read<int>('count')).getSingle();
   }
 }

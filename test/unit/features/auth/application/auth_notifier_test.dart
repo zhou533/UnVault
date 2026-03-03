@@ -72,6 +72,9 @@ void main() {
           passwordBytes: [1, 2, 3, 4, 5, 6, 7, 8],
         );
 
-    expect(container.read(authProvider), const AuthState.error('Incorrect password'));
+    expect(
+      container.read(authProvider),
+      const AuthState.error('Incorrect password'),
+    );
   });
 }

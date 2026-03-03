@@ -26,7 +26,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     final password = _controller.text;
     if (password.length < 8) return;
 
-    // NOTE: walletId=1 for MVP (single wallet). Multi-wallet: read active wallet from DB.
+    // NOTE: walletId=1 for MVP. Multi-wallet: read active wallet from DB.
     await ref.read(authProvider.notifier).unlock(
           walletId: 1,
           passwordBytes: password.codeUnits,
@@ -36,7 +36,10 @@ class _LockScreenState extends ConsumerState<LockScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen(authProvider, (_, next) {
-      next.maybeWhen(unlocked: () => context.goNamed(RouteNames.walletList), orElse: () {});
+      next.maybeWhen(
+        unlocked: () => context.goNamed(RouteNames.walletList),
+        orElse: () {},
+      );
     });
 
     final state = ref.watch(authProvider);
@@ -48,7 +51,10 @@ class _LockScreenState extends ConsumerState<LockScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('UnVault', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            const Text(
+              'UnVault',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 40),
             TextField(
               controller: _controller,
@@ -57,7 +63,9 @@ class _LockScreenState extends ConsumerState<LockScreen> {
                 labelText: 'Password',
                 errorText: errorMsg,
                 suffixIcon: IconButton(
-                  icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                  icon: Icon(
+                    _obscure ? Icons.visibility : Icons.visibility_off,
+                  ),
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
