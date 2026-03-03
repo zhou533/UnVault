@@ -501,17 +501,29 @@ final_key → AES-256-GCM → 加密助记词
 
 ```yaml
 dependencies:
-  flutter_riverpod: ^2.x    # 状态管理
-  drift: ^2.x               # 本地数据库 (SQLite)
-  go_router: ^x.x           # 路由
-  local_auth: ^2.x          # 生物识别
-  flutter_secure_storage: ^9.x  # Keychain/Keystore 封装
-  freezed_annotation: ^2.x  # 不可变数据模型（注解）
+  drift: ^2.22.0                  # 本地数据库 (SQLite)
+  drift_flutter: ^0.2.0           # drift SQLite 连接（替代 sqlite3_flutter_libs）
+  flutter_riverpod: ^3.0.0        # 状态管理 (Riverpod 3.x, auto-dispose 默认)
+  flutter_rust_bridge: ^2.7.0     # Rust FFI 桥接
+  flutter_secure_storage: ^9.2.0  # Keychain/Keystore 封装
+  freezed_annotation: ^3.0.0      # 不可变数据模型 (freezed 3.x, sealed class)
+  go_router: ^14.8.0              # 路由
+  json_annotation: ^4.9.0         # JSON 序列化注解
+  local_auth: ^2.3.0              # 生物识别
+  path: ^1.9.0                    # 路径工具
+  path_provider: ^2.1.0           # 文件路径
+  riverpod_annotation: ^3.0.0     # Riverpod 代码生成注解
 
 dev_dependencies:
-  freezed: ^2.x             # 代码生成
-  build_runner: ^2.x        # 构建工具
-  drift_dev: ^2.x           # drift 代码生成
+  build_runner: ^2.4.0            # 构建工具
+  custom_lint: ^0.7.0             # 自定义 lint 框架
+  drift_dev: ^2.22.0              # drift 代码生成
+  freezed: ^3.0.0                 # freezed 代码生成
+  json_serializable: ^6.9.0       # JSON 序列化代码生成
+  mocktail: ^1.0.0                # 测试 Mock（无需代码生成）
+  riverpod_generator: ^3.0.0      # Riverpod 代码生成
+  riverpod_lint: ^3.0.0           # Riverpod 专用 lint 规则
+  very_good_analysis: ^7.0.0      # 严格 lint 规则集
 ```
 
 ## 6. 数据存储方案
@@ -1495,3 +1507,19 @@ updates:
 - [ ] ERC-721/1155 NFT 展示
 - [ ] Secure Enclave / StrongBox 硬件密钥绑定
 - [ ] Shamir 秘密分片备份（SSS）
+
+## Changelog
+
+### 2026-03-03
+
+- **[Section 5.5]** 更新 Flutter 依赖版本（架构师 Review 后确认）：
+  - Riverpod `^2.x` → `^3.0.0`（3.x 默认 auto-dispose，统一 Ref API）
+  - freezed `^2.x` → `^3.0.0`（3.x 使用 sealed class，集合自动不可变）
+  - 新增 `drift_flutter: ^0.2.0`（替代 `sqlite3_flutter_libs`，drift 官方推荐）
+  - 新增 `riverpod_annotation: ^3.0.0` + `riverpod_generator: ^3.0.0`（代码生成方式）
+  - 新增 `riverpod_lint: ^3.0.0` + `custom_lint: ^0.7.0`（Riverpod 专用 lint）
+  - 新增 `very_good_analysis: ^7.0.0`（替代 `flutter_lints`，更严格的 lint 规则）
+  - 新增 `json_annotation` / `json_serializable`（freezed 3.x 依赖）
+  - 新增 `flutter_rust_bridge: ^2.7.0`（明确 FFI 桥接版本）
+  - 新增 `path_provider` / `path`（文件路径工具）
+  - 新增 `mocktail: ^1.0.0`（测试 Mock 框架）
