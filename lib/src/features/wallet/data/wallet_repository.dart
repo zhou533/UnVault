@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:drift/drift.dart';
 import 'package:unvault/src/core/database/app_database.dart';
+import 'package:unvault/src/core/database/daos/accounts_dao.dart';
 import 'package:unvault/src/core/database/daos/wallets_dao.dart';
 import 'package:unvault/src/core/exceptions/app_exceptions.dart';
 import 'package:unvault/src/core/services/secure_storage_service.dart';
@@ -11,11 +12,14 @@ import 'package:unvault/src/rust/api/wallet_api.dart' as rust_wallet;
 class WalletRepository {
   const WalletRepository({
     required WalletsDao dao,
+    required AccountsDao accountsDao,
     required SecureStorageService storage,
   })  : _dao = dao,
+        _accountsDao = accountsDao,
         _storage = storage;
 
   final WalletsDao _dao;
+  final AccountsDao _accountsDao;
   final SecureStorageService _storage;
 
   Future<List<WalletModel>> getWallets() async {
@@ -53,7 +57,16 @@ class WalletRepository {
       WalletsCompanion.insert(name: name),
     );
 
-    // 3. Store encrypted credentials in secure storage
+    // 3. Insert first account (derivation index 0)
+    await _accountsDao.insertAccount(
+      AccountsCompanion.insert(
+        walletId: walletId,
+        derivationIndex: 0,
+        address: response.firstAddress,
+      ),
+    );
+
+    // 4. Store encrypted credentials in secure storage
     await _storage.storeWalletCredentials(
       walletId: walletId,
       encryptedMnemonic: response.encryptedMnemonic,
@@ -63,7 +76,7 @@ class WalletRepository {
       argon2Parallelism: response.argon2Parallelism,
     );
 
-    // 4. Return result including mnemonic bytes for backup display
+    // 5. Return result including mnemonic bytes for backup display
     return WalletCreationResult(
       walletId: walletId,
       firstAddress: response.firstAddress,
@@ -86,6 +99,14 @@ class WalletRepository {
 
     final walletId = await _dao.insertWallet(
       WalletsCompanion.insert(name: name),
+    );
+
+    await _accountsDao.insertAccount(
+      AccountsCompanion.insert(
+        walletId: walletId,
+        derivationIndex: 0,
+        address: response.firstAddress,
+      ),
     );
 
     await _storage.storeWalletCredentials(

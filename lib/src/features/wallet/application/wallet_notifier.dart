@@ -16,6 +16,7 @@ Future<List<WalletModel>> walletList(Ref ref) async {
 WalletRepository walletRepository(Ref ref) {
   return WalletRepository(
     dao: ref.watch(appDatabaseProvider).walletsDao,
+    accountsDao: ref.watch(appDatabaseProvider).accountsDao,
     storage: ref.watch(secureStorageServiceProvider),
   );
 }

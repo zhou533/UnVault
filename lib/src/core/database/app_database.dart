@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import 'package:unvault/src/core/database/daos/accounts_dao.dart';
 import 'package:unvault/src/core/database/daos/networks_dao.dart';
 import 'package:unvault/src/core/database/daos/wallets_dao.dart';
 import 'package:unvault/src/core/database/tables/accounts_table.dart';
@@ -12,7 +13,7 @@ part 'app_database.g.dart';
 
 @DriftDatabase(
   tables: [Wallets, Accounts, Transactions, Networks],
-  daos: [WalletsDao, NetworksDao],
+  daos: [WalletsDao, AccountsDao, NetworksDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -31,6 +32,9 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   WalletsDao get walletsDao => WalletsDao(this);
+
+  @override
+  AccountsDao get accountsDao => AccountsDao(this);
 
   @override
   NetworksDao get networksDao => NetworksDao(this);
