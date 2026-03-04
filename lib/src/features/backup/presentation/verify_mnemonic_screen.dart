@@ -23,7 +23,8 @@ class VerifyMnemonicScreen extends ConsumerStatefulWidget {
 
 class _VerifyMnemonicScreenState extends ConsumerState<VerifyMnemonicScreen> {
   late final List<int> _challengeIndices;
-  late final List<TextEditingController> _controllers;
+  late final List<List<String>> _options;
+  final List<String?> _selected = [null, null, null];
   String? _error;
 
   @override
@@ -32,22 +33,29 @@ class _VerifyMnemonicScreenState extends ConsumerState<VerifyMnemonicScreen> {
     final rng = Random.secure();
     final indices = List.generate(widget.words.length, (i) => i)..shuffle(rng);
     _challengeIndices = indices.take(3).toList()..sort();
-    _controllers = List.generate(3, (_) => TextEditingController());
-  }
 
-  @override
-  void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
-    }
-    super.dispose();
+    // For each challenge, build 3 shuffled options (1 correct + 2 wrong)
+    _options = _challengeIndices.map((correctIdx) {
+      final correctWord = widget.words[correctIdx];
+      final wrongWords = widget.words
+          .where((w) => w != correctWord)
+          .toList()
+        ..shuffle(rng);
+      final opts = [correctWord, ...wrongWords.take(2)]..shuffle(rng);
+      return opts;
+    }).toList();
   }
 
   Future<void> _verify() async {
     for (var i = 0; i < _challengeIndices.length; i++) {
-      if (_controllers[i].text.trim() != widget.words[_challengeIndices[i]]) {
-        setState(() =>
-            _error = 'Incorrect. Check word ${_challengeIndices[i] + 1}.');
+      if (_selected[i] == null) {
+        setState(() => _error = 'Please select a word for each position.');
+        return;
+      }
+      if (_selected[i] != widget.words[_challengeIndices[i]]) {
+        setState(
+          () => _error = 'Incorrect. Check word #${_challengeIndices[i] + 1}.',
+        );
         return;
       }
     }
@@ -59,36 +67,133 @@ class _VerifyMnemonicScreenState extends ConsumerState<VerifyMnemonicScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accentColor = theme.colorScheme.primary;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Verify Recovery Phrase')),
+      appBar: AppBar(title: const Text('Verify Phrase')),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           children: [
-            const Text('Enter the requested words to confirm your backup.'),
+            Text(
+              'Select the correct word for each position '
+              'to verify your backup.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
-            ...List.generate(
-              3,
-              (i) => Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: TextField(
-                  controller: _controllers[i],
-                  decoration: InputDecoration(
-                    labelText: 'Word #${_challengeIndices[i] + 1}',
-                  ),
+            Expanded(
+              child: ListView.separated(
+                itemCount: 3,
+                separatorBuilder: (_, __) => const SizedBox(height: 24),
+                itemBuilder: (ctx, qi) => _QuestionBlock(
+                  label: 'Word #${_challengeIndices[qi] + 1}',
+                  options: _options[qi],
+                  selected: _selected[qi],
+                  accentColor: accentColor,
+                  onSelect: (word) => setState(() {
+                    _selected[qi] = word;
+                    _error = null;
+                  }),
                 ),
               ),
             ),
-            if (_error != null)
-              Text(_error!, style: const TextStyle(color: Colors.red)),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+            ],
             const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _verify,
-              child: const Text('Confirm'),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: FilledButton(
+                onPressed: _verify,
+                child: const Text('Verify & Continue'),
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _QuestionBlock extends StatelessWidget {
+  const _QuestionBlock({
+    required this.label,
+    required this.options,
+    required this.selected,
+    required this.accentColor,
+    required this.onSelect,
+  });
+
+  final String label;
+  final List<String> options;
+  final String? selected;
+  final Color accentColor;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: accentColor,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: options.map((word) {
+            final isSelected = word == selected;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: word != options.last ? 10 : 0,
+                ),
+                child: GestureDetector(
+                  onTap: () => onSelect(word),
+                  child: Container(
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? accentColor
+                          : theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(10),
+                      border: isSelected
+                          ? null
+                          : Border.all(
+                              color: theme.colorScheme.outline
+                                  .withValues(alpha: 0.3),
+                            ),
+                    ),
+                    child: Text(
+                      word,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : theme.colorScheme.onSurface,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }
