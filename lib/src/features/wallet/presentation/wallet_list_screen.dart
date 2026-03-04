@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:unvault/src/core/constants/chain_config.dart';
 import 'package:unvault/src/features/network/application/network_notifier.dart';
+import 'package:unvault/src/features/network/presentation/chain_switch_sheet.dart';
 import 'package:unvault/src/features/wallet/application/balance_notifier.dart';
 import 'package:unvault/src/features/wallet/application/wallet_notifier.dart';
 import 'package:unvault/src/features/wallet/domain/balance_model.dart';
@@ -81,11 +82,15 @@ class _HomeHeader extends StatelessWidget {
             error: (_, __) => const Text('Error'),
           ),
           const Spacer(),
-          // Chain badge
+          // Chain badge — opens chain switch bottom sheet
           ActionChip(
             label: Text(activeNetwork.symbol),
-            // Chain switch bottom sheet not implemented yet (Task 6)
-            onPressed: () {},
+            onPressed: () {
+              showModalBottomSheet<void>(
+                context: context,
+                builder: (_) => const ChainSwitchSheet(),
+              );
+            },
           ),
         ],
       ),
