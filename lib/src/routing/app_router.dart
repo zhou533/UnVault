@@ -1,7 +1,11 @@
 
+import 'dart:typed_data';
+
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:unvault/src/features/auth/application/auth_notifier.dart';
+import 'package:unvault/src/features/auth/domain/auth_state.dart';
 import 'package:unvault/src/features/auth/presentation/biometric_setup_screen.dart';
 import 'package:unvault/src/features/auth/presentation/lock_screen.dart';
 import 'package:unvault/src/features/auth/presentation/set_password_screen.dart';
@@ -22,8 +26,20 @@ part 'app_router.g.dart';
 
 @riverpod
 GoRouter router(Ref ref) {
+  final authState = ref.watch(authProvider);
+
   return GoRouter(
     initialLocation: '/lock',
+    redirect: (context, routerState) {
+      final location = routerState.matchedLocation;
+      return authState.maybeWhen(
+        loading: () => null,
+        firstLaunch: () =>
+            location != '/set-password' ? '/set-password' : null,
+        unlocked: () => location == '/lock' ? '/wallets' : null,
+        orElse: () => location == '/wallets' ? '/lock' : null,
+      );
+    },
     routes: [
       GoRoute(
         path: '/lock',
@@ -48,24 +64,44 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: 'create',
             name: RouteNames.createWallet,
-            builder: (context, state) => const CreateWalletScreen(),
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              final password = extra?['password'] as String? ?? '';
+              return CreateWalletScreen(passwordBytes: password.codeUnits);
+            },
           ),
           GoRoute(
             path: 'import',
             name: RouteNames.importWallet,
-            builder: (context, state) => const ImportWalletScreen(),
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              final password = extra?['password'] as String? ?? '';
+              return ImportWalletScreen(passwordBytes: password.codeUnits);
+            },
           ),
         ],
       ),
       GoRoute(
         path: '/backup/show',
         name: RouteNames.backupShow,
-        builder: (context, state) => const ShowMnemonicScreen(),
+        builder: (context, state) {
+          final extra = state.extra! as Map<String, dynamic>;
+          return ShowMnemonicScreen(
+            walletId: extra['walletId'] as int,
+            mnemonicBytes: extra['mnemonicBytes'] as Uint8List,
+          );
+        },
       ),
       GoRoute(
         path: '/backup/verify',
         name: RouteNames.backupVerify,
-        builder: (context, state) => const VerifyMnemonicScreen(),
+        builder: (context, state) {
+          final extra = state.extra! as Map<String, dynamic>;
+          return VerifyMnemonicScreen(
+            walletId: extra['walletId'] as int,
+            words: (extra['words'] as List).cast<String>(),
+          );
+        },
       ),
       GoRoute(
         path: '/transfer/send',
