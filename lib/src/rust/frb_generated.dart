@@ -66,7 +66,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 1319894471;
+  int get rustContentHash => 1759413611;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -135,6 +135,20 @@ abstract class RustLibApi extends BaseApi {
 
   Future<SignTransactionResponse> crateApiTransactionApiSignTransaction({
     required List<int> privateKey,
+    required BigInt chainId,
+    required BigInt nonce,
+    required String to,
+    required String valueWei,
+    required List<int> input,
+    required BigInt gasLimit,
+    required BigInt maxFeePerGas,
+    required BigInt maxPriorityFeePerGas,
+  });
+
+  Future<SignTransactionResponse>
+  crateApiTransactionApiSignTransactionWithSeed({
+    required List<int> phraseBytes,
+    required int accountIndex,
     required BigInt chainId,
     required BigInt nonce,
     required String to,
@@ -597,13 +611,87 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<SignTransactionResponse>
+  crateApiTransactionApiSignTransactionWithSeed({
+    required List<int> phraseBytes,
+    required int accountIndex,
+    required BigInt chainId,
+    required BigInt nonce,
+    required String to,
+    required String valueWei,
+    required List<int> input,
+    required BigInt gasLimit,
+    required BigInt maxFeePerGas,
+    required BigInt maxPriorityFeePerGas,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(phraseBytes, serializer);
+          sse_encode_u_32(accountIndex, serializer);
+          sse_encode_u_64(chainId, serializer);
+          sse_encode_u_64(nonce, serializer);
+          sse_encode_String(to, serializer);
+          sse_encode_String(valueWei, serializer);
+          sse_encode_list_prim_u_8_loose(input, serializer);
+          sse_encode_u_64(gasLimit, serializer);
+          sse_encode_U128(maxFeePerGas, serializer);
+          sse_encode_U128(maxPriorityFeePerGas, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 13,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_sign_transaction_response,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiTransactionApiSignTransactionWithSeedConstMeta,
+        argValues: [
+          phraseBytes,
+          accountIndex,
+          chainId,
+          nonce,
+          to,
+          valueWei,
+          input,
+          gasLimit,
+          maxFeePerGas,
+          maxPriorityFeePerGas,
+        ],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTransactionApiSignTransactionWithSeedConstMeta =>
+      const TaskConstMeta(
+        debugName: "sign_transaction_with_seed",
+        argNames: [
+          "phraseBytes",
+          "accountIndex",
+          "chainId",
+          "nonce",
+          "to",
+          "valueWei",
+          "input",
+          "gasLimit",
+          "maxFeePerGas",
+          "maxPriorityFeePerGas",
+        ],
+      );
+
+  @override
   bool crateApiCryptoApiValidateMnemonic({required List<int> phraseBytes}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_list_prim_u_8_loose(phraseBytes, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 13)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 14)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,

@@ -46,6 +46,40 @@ Future<SignTransactionResponse> signTransaction({
   maxPriorityFeePerGas: maxPriorityFeePerGas,
 );
 
+/// Signs a transaction using a mnemonic phrase, keeping the private key entirely in Rust.
+///
+/// SECURITY: The private key is derived from the mnemonic in-memory, used for signing,
+/// and zeroized on drop (via `DerivedKeyPair`'s `ZeroizeOnDrop` implementation).
+/// The private key NEVER crosses the FFI boundary.
+///
+/// # Parameters
+/// - `phrase_bytes`: BIP-39 mnemonic phrase as UTF-8 bytes.
+/// - `account_index`: BIP-44 account index (0-based).
+/// - Remaining params same as `sign_transaction`.
+Future<SignTransactionResponse> signTransactionWithSeed({
+  required List<int> phraseBytes,
+  required int accountIndex,
+  required BigInt chainId,
+  required BigInt nonce,
+  required String to,
+  required String valueWei,
+  required List<int> input,
+  required BigInt gasLimit,
+  required BigInt maxFeePerGas,
+  required BigInt maxPriorityFeePerGas,
+}) => RustLib.instance.api.crateApiTransactionApiSignTransactionWithSeed(
+  phraseBytes: phraseBytes,
+  accountIndex: accountIndex,
+  chainId: chainId,
+  nonce: nonce,
+  to: to,
+  valueWei: valueWei,
+  input: input,
+  gasLimit: gasLimit,
+  maxFeePerGas: maxFeePerGas,
+  maxPriorityFeePerGas: maxPriorityFeePerGas,
+);
+
 /// Response from signing a transaction.
 class SignTransactionResponse {
   /// RLP-encoded signed transaction bytes (ready for `eth_sendRawTransaction`).
