@@ -13,4 +13,6 @@ abstract final class RouteNames {
   static const history = 'history';
   static const settings = 'settings';
   static const networkManagement = 'network-management';
+  static const accounts = 'accounts';
+  static const transactionResult = 'transaction-result';
 }

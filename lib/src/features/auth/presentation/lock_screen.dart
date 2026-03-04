@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:unvault/src/core/providers/app_providers.dart';
 import 'package:unvault/src/features/auth/application/auth_notifier.dart';
 import 'package:unvault/src/features/auth/domain/auth_state.dart';
+import 'package:unvault/src/features/wallet/application/active_wallet_notifier.dart';
+import 'package:unvault/src/features/wallet/application/wallet_notifier.dart';
 import 'package:unvault/src/routing/route_names.dart';
 
 class LockScreen extends ConsumerStatefulWidget {
@@ -26,11 +29,32 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     final password = _controller.text;
     if (password.length < 8) return;
 
-    // NOTE: walletId=1 for MVP. Multi-wallet: read active wallet from DB.
+    final wallets = await ref.read(walletListProvider.future);
+    if (wallets.isEmpty) return;
+    final firstWallet = wallets.first;
+
     await ref.read(authProvider.notifier).unlock(
-          walletId: 1,
+          walletId: firstWallet.id,
           passwordBytes: password.codeUnits,
         );
+
+    // Set active wallet only after successful unlock
+    final authState = ref.read(authProvider);
+    final isUnlocked = authState.maybeWhen(
+      unlocked: () => true,
+      orElse: () => false,
+    );
+    if (!isUnlocked) return;
+
+    final accounts = await ref
+        .read(appDatabaseProvider)
+        .accountsDao
+        .getAccountsForWallet(firstWallet.id);
+    if (accounts.isNotEmpty) {
+      ref
+          .read(activeWalletProvider.notifier)
+          .setWallet(firstWallet.id, accounts.first.id);
+    }
   }
 
   @override
