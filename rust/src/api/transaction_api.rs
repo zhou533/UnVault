@@ -4,7 +4,9 @@
 //! Only the signed raw transaction bytes are returned to Dart.
 
 use alloy_primitives::{Address, U256};
+use secrecy::ExposeSecret;
 
+use crate::crypto::{key_derivation, mnemonic};
 use crate::error::{Result, UnvaultError};
 use crate::transaction::{builder, signer};
 
@@ -74,6 +76,52 @@ pub fn sign_transaction(
         tx_hash: signed.tx_hash.to_vec(),
         from: signed.from.to_checksum(None),
     })
+}
+
+/// Signs a transaction using a mnemonic phrase, keeping the private key entirely in Rust.
+///
+/// SECURITY: The private key is derived from the mnemonic in-memory, used for signing,
+/// and zeroized on drop (via `DerivedKeyPair`'s `ZeroizeOnDrop` implementation).
+/// The private key NEVER crosses the FFI boundary.
+///
+/// # Parameters
+/// - `phrase_bytes`: BIP-39 mnemonic phrase as UTF-8 bytes.
+/// - `account_index`: BIP-44 account index (0-based).
+/// - Remaining params same as `sign_transaction`.
+#[allow(clippy::too_many_arguments)]
+pub fn sign_transaction_with_seed(
+    phrase_bytes: Vec<u8>,
+    account_index: u32,
+    chain_id: u64,
+    nonce: u64,
+    to: String,
+    value_wei: String,
+    input: Vec<u8>,
+    gas_limit: u64,
+    max_fee_per_gas: u128,
+    max_priority_fee_per_gas: u128,
+) -> Result<SignTransactionResponse> {
+    // 1. Derive seed from mnemonic phrase
+    let seed = mnemonic::derive_seed(&phrase_bytes, b"")?;
+
+    // 2. Derive account at the specified index
+    let account = key_derivation::derive_account(seed.expose_secret().as_bytes(), account_index)?;
+
+    // 3. Extract private key bytes (stays in Rust, zeroized on drop)
+    let private_key = account.key_pair.expose_secret().as_bytes().to_vec();
+
+    // 4. Delegate to existing sign_transaction
+    sign_transaction(
+        private_key,
+        chain_id,
+        nonce,
+        to,
+        value_wei,
+        input,
+        gas_limit,
+        max_fee_per_gas,
+        max_priority_fee_per_gas,
+    )
 }
 
 /// Response from signing a transaction.
@@ -181,6 +229,59 @@ mod tests {
             1_500_000_000,
         );
 
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn sign_transaction_with_seed_succeeds() {
+        let phrase = b"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+        let result = sign_transaction_with_seed(
+            phrase.to_vec(),
+            0,
+            1,  // Ethereum mainnet
+            0,  // nonce
+            "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".to_string(),
+            "1000000000000000000".to_string(), // 1 ETH
+            vec![],
+            21000,
+            30_000_000_000,
+            2_000_000_000,
+        )
+        .unwrap();
+
+        assert!(!result.raw_tx.is_empty());
+        assert_eq!(result.tx_hash.len(), 32);
+        assert!(result.from.starts_with("0x"));
+        assert_eq!(result.from.len(), 42);
+    }
+
+    #[test]
+    fn sign_transaction_with_seed_different_index() {
+        let phrase = b"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+        let r0 = sign_transaction_with_seed(
+            phrase.to_vec(), 0, 1, 0,
+            "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".to_string(),
+            "0".to_string(), vec![], 21000, 30_000_000_000, 2_000_000_000,
+        ).unwrap();
+
+        let r1 = sign_transaction_with_seed(
+            phrase.to_vec(), 1, 1, 0,
+            "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".to_string(),
+            "0".to_string(), vec![], 21000, 30_000_000_000, 2_000_000_000,
+        ).unwrap();
+
+        // Different account indices should produce different sender addresses
+        assert_ne!(r0.from, r1.from);
+    }
+
+    #[test]
+    fn sign_transaction_with_seed_invalid_phrase_fails() {
+        let result = sign_transaction_with_seed(
+            b"not a valid mnemonic".to_vec(),
+            0, 1, 0,
+            "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045".to_string(),
+            "0".to_string(), vec![], 21000, 30_000_000_000, 2_000_000_000,
+        );
         assert!(result.is_err());
     }
 }
