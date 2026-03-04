@@ -17,10 +17,12 @@ import 'package:unvault/src/features/settings/presentation/settings_screen.dart'
 import 'package:unvault/src/features/transfer/presentation/confirm_transaction_screen.dart';
 import 'package:unvault/src/features/transfer/presentation/receive_screen.dart';
 import 'package:unvault/src/features/transfer/presentation/send_screen.dart';
+import 'package:unvault/src/features/transfer/presentation/transaction_result_screen.dart';
 import 'package:unvault/src/features/wallet/presentation/create_wallet_screen.dart';
 import 'package:unvault/src/features/wallet/presentation/import_wallet_screen.dart';
 import 'package:unvault/src/features/wallet/presentation/wallet_list_screen.dart';
 import 'package:unvault/src/routing/route_names.dart';
+import 'package:unvault/src/routing/scaffold_with_nav_bar.dart';
 
 part 'app_router.g.dart';
 
@@ -36,8 +38,24 @@ GoRouter router(Ref ref) {
         loading: () => null,
         firstLaunch: () =>
             location != '/set-password' ? '/set-password' : null,
-        unlocked: () => location == '/lock' ? '/wallets' : null,
-        orElse: () => location == '/wallets' ? '/lock' : null,
+        unlocked: () {
+          if (location == '/lock' || location == '/set-password') {
+            return '/wallets';
+          }
+          return null;
+        },
+        orElse: () {
+          const protectedPaths = [
+            '/wallets',
+            '/history',
+            '/settings',
+            '/transfer',
+          ];
+          if (protectedPaths.any(location.startsWith)) {
+            return '/lock';
+          }
+          return null;
+        },
       );
     },
     routes: [
@@ -56,31 +74,73 @@ GoRouter router(Ref ref) {
         name: RouteNames.biometricSetup,
         builder: (context, state) => const BiometricSetupScreen(),
       ),
-      GoRoute(
-        path: '/wallets',
-        name: RouteNames.walletList,
-        builder: (context, state) => const WalletListScreen(),
-        routes: [
-          GoRoute(
-            path: 'create',
-            name: RouteNames.createWallet,
-            builder: (context, state) {
-              final extra = state.extra as Map<String, dynamic>?;
-              final password = extra?['password'] as String? ?? '';
-              return CreateWalletScreen(passwordBytes: password.codeUnits);
-            },
+      // Tabbed navigation: Wallet / History / Settings
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            ScaffoldWithNavBar(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/wallets',
+                name: RouteNames.walletList,
+                builder: (context, state) => const WalletListScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'create',
+                    name: RouteNames.createWallet,
+                    builder: (context, state) {
+                      final extra = state.extra as Map<String, dynamic>?;
+                      final password = extra?['password'] as String? ?? '';
+                      return CreateWalletScreen(
+                        passwordBytes: password.codeUnits,
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'import',
+                    name: RouteNames.importWallet,
+                    builder: (context, state) {
+                      final extra = state.extra as Map<String, dynamic>?;
+                      final password = extra?['password'] as String? ?? '';
+                      return ImportWalletScreen(
+                        passwordBytes: password.codeUnits,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
           ),
-          GoRoute(
-            path: 'import',
-            name: RouteNames.importWallet,
-            builder: (context, state) {
-              final extra = state.extra as Map<String, dynamic>?;
-              final password = extra?['password'] as String? ?? '';
-              return ImportWalletScreen(passwordBytes: password.codeUnits);
-            },
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/history',
+                name: RouteNames.history,
+                builder: (context, state) => const HistoryScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/settings',
+                name: RouteNames.settings,
+                builder: (context, state) => const SettingsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'network',
+                    name: RouteNames.networkManagement,
+                    builder: (context, state) =>
+                        const NetworkManagementScreen(),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
+      // Full-screen overlays (outside shell)
       GoRoute(
         path: '/backup/show',
         name: RouteNames.backupShow,
@@ -119,21 +179,16 @@ GoRouter router(Ref ref) {
         builder: (context, state) => const ReceiveScreen(),
       ),
       GoRoute(
-        path: '/history',
-        name: RouteNames.history,
-        builder: (context, state) => const HistoryScreen(),
-      ),
-      GoRoute(
-        path: '/settings',
-        name: RouteNames.settings,
-        builder: (context, state) => const SettingsScreen(),
-        routes: [
-          GoRoute(
-            path: 'network',
-            name: RouteNames.networkManagement,
-            builder: (context, state) => const NetworkManagementScreen(),
-          ),
-        ],
+        path: '/transfer/result',
+        name: RouteNames.transactionResult,
+        builder: (context, state) {
+          final extra = state.extra! as Map<String, dynamic>;
+          return TransactionResultScreen(
+            txHash: extra['txHash'] as String,
+            amount: extra['amount'] as String,
+            token: extra['token'] as String,
+          );
+        },
       ),
     ],
   );
