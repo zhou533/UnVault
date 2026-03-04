@@ -63,8 +63,7 @@ class _HomeHeader extends StatelessWidget {
           // Wallet name with dropdown arrow
           walletsAsync.when(
             data: (wallets) => GestureDetector(
-              // Accounts route not implemented yet (Task 12) — no-op
-              onTap: () {},
+              onTap: () => context.pushNamed(RouteNames.accounts),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

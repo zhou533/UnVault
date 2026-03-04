@@ -18,6 +18,7 @@ import 'package:unvault/src/features/transfer/presentation/confirm_transaction_s
 import 'package:unvault/src/features/transfer/presentation/receive_screen.dart';
 import 'package:unvault/src/features/transfer/presentation/send_screen.dart';
 import 'package:unvault/src/features/transfer/presentation/transaction_result_screen.dart';
+import 'package:unvault/src/features/wallet/presentation/accounts_screen.dart';
 import 'package:unvault/src/features/wallet/presentation/create_wallet_screen.dart';
 import 'package:unvault/src/features/wallet/presentation/import_wallet_screen.dart';
 import 'package:unvault/src/features/wallet/presentation/wallet_list_screen.dart';
@@ -107,6 +108,11 @@ GoRouter router(Ref ref) {
                         passwordBytes: password.codeUnits,
                       );
                     },
+                  ),
+                  GoRoute(
+                    path: 'accounts',
+                    name: RouteNames.accounts,
+                    builder: (context, state) => const AccountsScreen(),
                   ),
                 ],
               ),
