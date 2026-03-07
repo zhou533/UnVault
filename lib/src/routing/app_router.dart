@@ -113,7 +113,17 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/transfer/confirm',
         name: RouteNames.confirmTransaction,
-        builder: (context, state) => const ConfirmTransactionScreen(),
+        builder: (context, state) {
+          final extra = state.extra! as Map<String, dynamic>;
+          return ConfirmTransactionScreen(
+            fromAddress: extra['fromAddress'] as String,
+            toAddress: extra['toAddress'] as String,
+            amount: extra['amount'] as String,
+            symbol: extra['symbol'] as String,
+            gasCost: extra['gasCost'] as String,
+            chainName: extra['chainName'] as String,
+          );
+        },
       ),
       GoRoute(
         path: '/transfer/receive',
