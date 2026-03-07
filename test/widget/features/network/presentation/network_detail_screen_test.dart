@@ -38,7 +38,8 @@ void main() {
     testWidgets('shows chain details', (tester) async {
       await tester.pumpWidget(buildScreen(chain: testChain));
 
-      expect(find.text('Ethereum'), findsOneWidget);
+      // Name appears in AppBar and detail row
+      expect(find.text('Ethereum'), findsNWidgets(2));
       expect(find.text('ETH'), findsOneWidget);
       expect(find.text('1'), findsOneWidget);
       expect(find.text('https://etherscan.io'), findsOneWidget);
