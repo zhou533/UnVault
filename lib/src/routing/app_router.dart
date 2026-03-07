@@ -18,6 +18,7 @@ import 'package:unvault/src/features/settings/presentation/settings_screen.dart'
 import 'package:unvault/src/features/transfer/presentation/confirm_transaction_screen.dart';
 import 'package:unvault/src/features/transfer/presentation/receive_screen.dart';
 import 'package:unvault/src/features/transfer/presentation/send_screen.dart';
+import 'package:unvault/src/features/transfer/presentation/transaction_result_screen.dart';
 import 'package:unvault/src/features/wallet/presentation/create_wallet_screen.dart';
 import 'package:unvault/src/features/wallet/presentation/import_wallet_screen.dart';
 import 'package:unvault/src/features/wallet/presentation/wallet_list_screen.dart';
@@ -121,6 +122,20 @@ GoRouter router(Ref ref) {
             amount: extra['amount'] as String,
             symbol: extra['symbol'] as String,
             gasCost: extra['gasCost'] as String,
+            chainName: extra['chainName'] as String,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/transfer/result',
+        name: RouteNames.transactionResult,
+        builder: (context, state) {
+          final extra = state.extra! as Map<String, dynamic>;
+          return TransactionResultScreen(
+            isSuccess: extra['isSuccess'] as bool,
+            txHash: extra['txHash'] as String?,
+            errorMessage: extra['errorMessage'] as String?,
+            explorerUrl: extra['explorerUrl'] as String?,
             chainName: extra['chainName'] as String,
           );
         },
