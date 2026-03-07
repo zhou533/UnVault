@@ -5,6 +5,7 @@ import 'package:unvault/src/features/auth/application/auth_notifier.dart';
 import 'package:unvault/src/features/auth/application/brute_force_notifier.dart';
 import 'package:unvault/src/features/auth/domain/auth_state.dart';
 import 'package:unvault/src/features/auth/domain/brute_force_state.dart';
+import 'package:unvault/src/features/auth/application/biometric_notifier.dart';
 import 'package:unvault/src/routing/route_names.dart';
 
 class LockScreen extends ConsumerStatefulWidget {
@@ -49,8 +50,12 @@ class _LockScreenState extends ConsumerState<LockScreen> {
 
     final state = ref.watch(authProvider);
     final bfState = ref.watch(bruteForceProvider);
+    final bioState = ref.watch(biometricProvider);
     final errorMsg = state.maybeWhen(error: (msg) => msg, orElse: () => null);
     final isLockedOut = bfState.isLockedOut;
+    final showBiometric = bioState.isEnabled &&
+        !bioState.shouldFallbackToPassword &&
+        !isLockedOut;
 
     return Scaffold(
       body: Padding(
@@ -97,6 +102,18 @@ class _LockScreenState extends ConsumerState<LockScreen> {
               onPressed: isLockedOut ? null : _unlock,
               child: const Text('Unlock'),
             ),
+            if (showBiometric) ...[
+              const SizedBox(height: 16),
+              IconButton.filled(
+                iconSize: 40,
+                onPressed: () {
+                  ref
+                      .read(biometricProvider.notifier)
+                      .attemptBiometricUnlock(walletId: 1);
+                },
+                icon: const Icon(Icons.fingerprint),
+              ),
+            ],
           ],
         ),
       ),

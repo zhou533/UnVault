@@ -54,7 +54,7 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/biometric-setup',
         name: RouteNames.biometricSetup,
-        builder: (context, state) => const BiometricSetupScreen(),
+        builder: (context, state) { final extra = state.extra as Map<String, dynamic>?; return BiometricSetupScreen(walletId: extra?['walletId'] as int? ?? 1); },
       ),
       GoRoute(
         path: '/wallets',
