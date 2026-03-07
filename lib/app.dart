@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:unvault/src/core/widgets/lifecycle_wrapper.dart';
 import 'package:unvault/src/features/auth/application/auth_notifier.dart';
 import 'package:unvault/src/localization/generated/app_localizations.dart';
 import 'package:unvault/src/routing/app_router.dart';
@@ -18,7 +19,8 @@ class UnVaultApp extends ConsumerWidget {
       ref.read(authProvider.notifier).checkAuthState();
     });
 
-    return MaterialApp.router(
+    return LifecycleWrapper(
+      child: MaterialApp.router(
       title: 'UnVault',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
@@ -34,6 +36,7 @@ class UnVaultApp extends ConsumerWidget {
       routerConfig: router,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+    ),
     );
   }
 }
