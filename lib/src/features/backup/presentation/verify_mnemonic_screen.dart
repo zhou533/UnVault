@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:unvault/src/core/widgets/screen_security_wrapper.dart';
 import 'package:unvault/src/features/wallet/application/wallet_notifier.dart';
 import 'package:unvault/src/routing/route_names.dart';
 
@@ -70,7 +71,7 @@ class _VerifyMnemonicScreenState extends ConsumerState<VerifyMnemonicScreen> {
     final theme = Theme.of(context);
     final accentColor = theme.colorScheme.primary;
 
-    return Scaffold(
+    return ScreenSecurityWrapper(child: Scaffold(
       appBar: AppBar(title: const Text('Verify Phrase')),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -117,7 +118,7 @@ class _VerifyMnemonicScreenState extends ConsumerState<VerifyMnemonicScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 

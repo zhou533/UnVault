@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:unvault/src/core/widgets/screen_security_wrapper.dart';
 import 'package:unvault/src/routing/route_names.dart';
 
 class ShowMnemonicScreen extends StatelessWidget {
@@ -20,7 +21,7 @@ class ShowMnemonicScreen extends StatelessWidget {
     final phrase = String.fromCharCodes(mnemonicBytes);
     final words = phrase.split(' ');
 
-    return Scaffold(
+    return ScreenSecurityWrapper(child: Scaffold(
       appBar: AppBar(title: const Text('Backup Recovery Phrase')),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -85,6 +86,6 @@ class ShowMnemonicScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 }
