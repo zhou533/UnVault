@@ -40,4 +40,23 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
           ..where((t) => t.status.equals('pending')))
         .get();
   }
+
+  Future<List<Transaction>> searchByHash(String hashPrefix) {
+    return (select(transactions)
+          ..where((t) => t.hash.like('$hashPrefix%'))
+          ..orderBy([(t) => OrderingTerm.desc(t.timestamp)])
+          ..limit(20))
+        .get();
+  }
+
+  Future<List<Transaction>> searchByAddress(String address, int chainId) {
+    return (select(transactions)
+          ..where((t) =>
+              t.chainId.equals(chainId) &
+              (t.fromAddress.like('%$address%') |
+                  t.toAddress.like('%$address%')))
+          ..orderBy([(t) => OrderingTerm.desc(t.timestamp)])
+          ..limit(20))
+        .get();
+  }
 }

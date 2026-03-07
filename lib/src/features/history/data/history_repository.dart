@@ -40,6 +40,17 @@ class HistoryRepository {
     await _dao.updateStatus(txHash, status.name);
   }
 
+  Future<List<TransactionRecord>> searchByHash(String hashPrefix) async {
+    final rows = await _dao.searchByHash(hashPrefix);
+    return rows.map(_mapRow).toList();
+  }
+
+  Future<List<TransactionRecord>> searchByAddress(
+      String address, int chainId) async {
+    final rows = await _dao.searchByAddress(address, chainId);
+    return rows.map(_mapRow).toList();
+  }
+
   TransactionRecord _mapRow(Transaction row) {
     return TransactionRecord(
       txHash: row.hash,
