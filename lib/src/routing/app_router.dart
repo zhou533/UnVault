@@ -165,7 +165,12 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: 'network',
             name: RouteNames.networkManagement,
-            builder: (context, state) => const NetworkManagementScreen(),
+            builder: (context, state) => NetworkManagementScreen(
+              builtInChains: const [],
+              customChains: const [],
+              onDeleteCustomChain: (_) {},
+              onAddNetwork: () {},
+            ),
           ),
         ],
       ),
