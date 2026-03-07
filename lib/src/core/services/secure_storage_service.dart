@@ -78,6 +78,20 @@ class SecureStorageService {
     );
   }
 
+  /// Stores the active wallet ID.
+  Future<void> storeActiveWalletId(int walletId) async {
+    await _storage.write(
+      key: 'active_wallet_id',
+      value: walletId.toString(),
+    );
+  }
+
+  /// Reads the active wallet ID, or null if none set.
+  Future<int?> readActiveWalletId() async {
+    final value = await _storage.read(key: 'active_wallet_id');
+    return value != null ? int.parse(value) : null;
+  }
+
   /// Deletes all credentials for a wallet. Called on wallet removal.
   Future<void> deleteWalletCredentials({required int walletId}) async {
     final prefix = 'wallet_$walletId';

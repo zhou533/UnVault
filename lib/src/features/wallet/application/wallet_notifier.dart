@@ -19,3 +19,9 @@ WalletRepository walletRepository(Ref ref) {
     storage: ref.watch(secureStorageServiceProvider),
   );
 }
+
+@riverpod
+Future<int?> activeWalletId(Ref ref) async {
+  final repo = ref.watch(walletRepositoryProvider);
+  return repo.getActiveWalletId();
+}

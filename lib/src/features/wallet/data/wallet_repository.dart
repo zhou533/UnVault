@@ -35,12 +35,15 @@ class WalletRepository {
   /// stores encrypted bytes in secure storage, saves wallet row in DB.
   ///
   /// Returns the new wallet's ID and the mnemonic bytes (zeroized by caller).
+  static const maxWallets = 10;
+
   Future<WalletCreationResult> createWallet({
     required String name,
     required List<int> passwordBytes,
     int wordCount = 12,
   }) async {
     if (passwordBytes.length < 8) throw const PasswordTooShortException();
+    await _enforceWalletLimit();
 
     // 1. Call Rust FFI to create wallet
     final response = await rust_wallet.createWallet(
@@ -78,6 +81,7 @@ class WalletRepository {
     required List<int> passwordBytes,
   }) async {
     if (passwordBytes.length < 8) throw const PasswordTooShortException();
+    await _enforceWalletLimit();
 
     final response = await rust_wallet.importWallet(
       phraseBytes: phraseBytes,
@@ -106,6 +110,16 @@ class WalletRepository {
 
   Future<void> markBackedUp(int walletId) async {
     await _dao.markBackedUp(walletId);
+  }
+
+  Future<int?> getActiveWalletId() => _storage.readActiveWalletId();
+
+  Future<void> setActiveWalletId(int walletId) =>
+      _storage.storeActiveWalletId(walletId);
+
+  Future<void> _enforceWalletLimit() async {
+    final count = await _dao.countWallets();
+    if (count >= maxWallets) throw const WalletLimitException();
   }
 }
 

@@ -6,6 +6,7 @@ import 'package:unvault/src/features/auth/application/brute_force_notifier.dart'
 import 'package:unvault/src/features/auth/domain/auth_state.dart';
 import 'package:unvault/src/features/auth/domain/brute_force_state.dart';
 import 'package:unvault/src/features/auth/application/biometric_notifier.dart';
+import 'package:unvault/src/features/wallet/application/wallet_notifier.dart';
 import 'package:unvault/src/routing/route_names.dart';
 
 class LockScreen extends ConsumerStatefulWidget {
@@ -32,9 +33,10 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     final bfState = ref.read(bruteForceProvider);
     if (bfState.isLockedOut) return;
 
-    // NOTE: walletId=1 for MVP. Multi-wallet: read active wallet from DB.
+    final activeId = await ref.read(activeWalletIdProvider.future);
+    final walletId = activeId ?? 1;
     await ref.read(authProvider.notifier).unlock(
-          walletId: 1,
+          walletId: walletId,
           passwordBytes: password.codeUnits,
         );
   }
@@ -107,9 +109,10 @@ class _LockScreenState extends ConsumerState<LockScreen> {
               IconButton.filled(
                 iconSize: 40,
                 onPressed: () {
+                  final id = ref.read(activeWalletIdProvider).value ?? 1;
                   ref
                       .read(biometricProvider.notifier)
-                      .attemptBiometricUnlock(walletId: 1);
+                      .attemptBiometricUnlock(walletId: id);
                 },
                 icon: const Icon(Icons.fingerprint),
               ),

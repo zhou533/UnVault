@@ -23,3 +23,8 @@ class NetworkException extends AppException {
 class RustBridgeException extends AppException {
   const RustBridgeException(super.message);
 }
+
+class WalletLimitException extends AppException {
+  const WalletLimitException()
+      : super('Maximum of 10 wallets reached');
+}
