@@ -41,6 +41,10 @@ pub enum UnvaultError {
     #[error("memory lock failed: {0}")]
     MemoryLock(String),
 
+    // -- Address errors --
+    #[error("invalid address: {0}")]
+    InvalidAddress(String),
+
     // -- Transaction errors --
     #[error("transaction build failed: {0}")]
     TransactionBuild(String),
