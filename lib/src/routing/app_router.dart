@@ -160,7 +160,15 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/settings',
         name: RouteNames.settings,
-        builder: (context, state) => const SettingsScreen(),
+        builder: (context, state) => SettingsScreen(
+              biometricEnabled: false,
+              autoLockLabel: '30 seconds',
+              onBiometricToggle: () {},
+              onAutoLockTap: () {},
+              onViewMnemonicTap: () {},
+              onNetworkManagementTap: () {},
+              onAboutTap: () {},
+            ),
         routes: [
           GoRoute(
             path: 'network',
