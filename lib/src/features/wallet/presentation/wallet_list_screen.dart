@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:unvault/src/features/auth/application/auth_notifier.dart';
 import 'package:unvault/src/features/network/application/network_notifier.dart';
 import 'package:unvault/src/features/network/data/network_repository.dart';
 import 'package:unvault/src/features/network/presentation/chain_selector_sheet.dart';
 import 'package:unvault/src/features/network/presentation/widgets/connection_indicator.dart';
 import 'package:unvault/src/features/wallet/application/wallet_notifier.dart';
+import 'package:unvault/src/features/wallet/presentation/wallet_drawer.dart';
 import 'package:unvault/src/routing/route_names.dart';
 
 final networkNotifierProvider = ChangeNotifierProvider(
@@ -22,6 +24,10 @@ class WalletListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.account_balance_wallet),
+          onPressed: () => _showWalletDrawer(context, ref),
+        ),
         title: GestureDetector(
           onTap: () => showChainSelectorSheet(
             context: context,
@@ -65,6 +71,33 @@ class WalletListScreen extends ConsumerWidget {
         loading: () =>
             const Center(child: CircularProgressIndicator.adaptive()),
         error: (e, _) => Center(child: Text('Error: $e')),
+      ),
+    );
+  }
+
+  void _showWalletDrawer(BuildContext context, WidgetRef ref) {
+    final walletsAsync = ref.read(walletListProvider);
+    final activeId = ref.read(activeWalletIdProvider).value ?? 1;
+    final wallets = walletsAsync.value ?? [];
+
+    showModalBottomSheet(
+      context: context,
+      builder: (sheetContext) => WalletDrawer(
+        wallets: wallets,
+        activeWalletId: activeId,
+        onWalletSelected: (walletId) async {
+          Navigator.of(sheetContext).pop();
+          if (walletId == activeId) return;
+
+          final repo = ref.read(walletRepositoryProvider);
+          await repo.setActiveWalletId(walletId);
+          ref.invalidate(activeWalletIdProvider);
+          ref.read(authProvider.notifier).lock();
+        },
+        onAddWallet: () {
+          Navigator.of(sheetContext).pop();
+          context.goNamed(RouteNames.createWallet);
+        },
       ),
     );
   }
