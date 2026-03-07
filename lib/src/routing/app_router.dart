@@ -143,7 +143,14 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/transfer/receive',
         name: RouteNames.receive,
-        builder: (context, state) => const ReceiveScreen(),
+        builder: (context, state) {
+          final extra = state.extra! as Map<String, dynamic>;
+          return ReceiveScreen(
+            address: extra['address'] as String,
+            chainName: extra['chainName'] as String,
+            symbol: extra['symbol'] as String,
+          );
+        },
       ),
       GoRoute(
         path: '/history',
