@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:unvault/src/features/network/application/network_notifier.dart';
+import 'package:unvault/src/features/network/data/network_repository.dart';
+import 'package:unvault/src/features/network/presentation/chain_selector_sheet.dart';
+import 'package:unvault/src/features/network/presentation/widgets/connection_indicator.dart';
 import 'package:unvault/src/features/wallet/application/wallet_notifier.dart';
 import 'package:unvault/src/routing/route_names.dart';
+
+final networkNotifierProvider = ChangeNotifierProvider(
+  (ref) => NetworkNotifier(NetworkRepository()),
+);
 
 class WalletListScreen extends ConsumerWidget {
   const WalletListScreen({super.key});
@@ -10,10 +18,25 @@ class WalletListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final walletsAsync = ref.watch(walletListProvider);
+    final networkNotifier = ref.watch(networkNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wallets'),
+        title: GestureDetector(
+          onTap: () => showChainSelectorSheet(
+            context: context,
+            notifier: networkNotifier,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ConnectionIndicator(status: networkNotifier.state.connectionStatus),
+              const SizedBox(width: 8),
+              Text(networkNotifier.state.activeChain.name),
+              const Icon(Icons.arrow_drop_down, size: 20),
+            ],
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
