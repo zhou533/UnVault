@@ -12,12 +12,12 @@ import UIKit
         GeneratedPluginRegistrant.register(with: self)
 
         let controller = window?.rootViewController as! FlutterViewController
-        let channel = FlutterMethodChannel(
+
+        let screenChannel = FlutterMethodChannel(
             name: "com.unvault/screen_security",
             binaryMessenger: controller.binaryMessenger
         )
-
-        channel.setMethodCallHandler { [weak self] (call, result) in
+        screenChannel.setMethodCallHandler { [weak self] (call, result) in
             switch call.method {
             case "enableProtection":
                 self?.enableScreenProtection()
@@ -25,6 +25,19 @@ import UIKit
             case "disableProtection":
                 self?.disableScreenProtection()
                 result(nil)
+            default:
+                result(FlutterMethodNotImplemented)
+            }
+        }
+
+        let deviceChannel = FlutterMethodChannel(
+            name: "com.unvault/device_security",
+            binaryMessenger: controller.binaryMessenger
+        )
+        deviceChannel.setMethodCallHandler { (call, result) in
+            switch call.method {
+            case "isDeviceCompromised":
+                result(Self.isDeviceJailbroken())
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -87,5 +100,40 @@ import UIKit
     private func hideOverlay() {
         screenSecurityOverlay?.removeFromSuperview()
         screenSecurityOverlay = nil
+    }
+
+    private static func isDeviceJailbroken() -> Bool {
+        #if targetEnvironment(simulator)
+        return false
+        #else
+        let paths = [
+            "/Applications/Cydia.app",
+            "/Applications/Sileo.app",
+            "/Library/MobileSubstrate/MobileSubstrate.dylib",
+            "/bin/bash",
+            "/usr/sbin/sshd",
+            "/etc/apt",
+            "/private/var/lib/apt/",
+            "/usr/bin/ssh",
+        ]
+        for path in paths {
+            if FileManager.default.fileExists(atPath: path) {
+                return true
+            }
+        }
+
+        if let _ = try? String(contentsOfFile: "/private/etc/fstab", encoding: .utf8) {
+            return true
+        }
+
+        let testPath = "/private/jailbreaktest-\(UUID().uuidString)"
+        do {
+            try "test".write(toFile: testPath, atomically: true, encoding: .utf8)
+            try FileManager.default.removeItem(atPath: testPath)
+            return true // Sandbox escape = jailbroken
+        } catch {
+            return false
+        }
+        #endif
     }
 }

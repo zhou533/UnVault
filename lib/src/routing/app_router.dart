@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:unvault/app.dart';
 import 'package:unvault/src/features/auth/application/auth_notifier.dart';
 import 'package:unvault/src/features/auth/domain/auth_state.dart';
 import 'package:unvault/src/features/auth/presentation/biometric_setup_screen.dart';
@@ -29,6 +30,7 @@ GoRouter router(Ref ref) {
   final authState = ref.watch(authProvider);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/lock',
     redirect: (context, routerState) {
       final location = routerState.matchedLocation;
