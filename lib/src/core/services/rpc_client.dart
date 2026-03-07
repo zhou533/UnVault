@@ -107,6 +107,26 @@ class RpcClient {
     return int.parse(result as String);
   }
 
+  /// Estimate gas for a transaction.
+  Future<BigInt> estimateGas(Map<String, dynamic> txParams) async {
+    final result = await call('eth_estimateGas', [txParams]);
+    return BigInt.parse(result as String);
+  }
+
+  /// Get fee history for EIP-1559 gas estimation.
+  Future<Map<String, dynamic>> getFeeHistory(
+    int blockCount,
+    String newest,
+    List<int> percentiles,
+  ) async {
+    final result = await call('eth_feeHistory', [
+      '0x${blockCount.toRadixString(16)}',
+      newest,
+      percentiles,
+    ]);
+    return result as Map<String, dynamic>;
+  }
+
   /// Dispose the underlying HTTP client.
   void dispose() {
     _httpClient.close();
