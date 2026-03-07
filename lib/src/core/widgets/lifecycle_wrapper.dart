@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unvault/src/core/services/app_lifecycle_service.dart';
+import 'package:unvault/src/core/services/clipboard_security_service.dart';
 import 'package:unvault/src/core/widgets/privacy_overlay.dart';
 import 'package:unvault/src/features/auth/application/auth_notifier.dart';
 
@@ -10,6 +11,11 @@ part 'lifecycle_wrapper.g.dart';
 @Riverpod(keepAlive: true)
 AppLifecycleService appLifecycleService(Ref ref) {
   return AppLifecycleService();
+}
+
+@Riverpod(keepAlive: true)
+ClipboardSecurityService clipboardSecurityService(Ref ref) {
+  return ClipboardSecurityService();
 }
 
 /// Wraps child widget with lifecycle observation for auto-lock and privacy overlay.
@@ -46,6 +52,7 @@ class _LifecycleWrapperState extends ConsumerState<LifecycleWrapper>
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
         lifecycleService.recordBackgroundTimestamp();
+        ref.read(clipboardSecurityServiceProvider).clearNow();
         setState(() => _showPrivacyOverlay = true);
 
       case AppLifecycleState.resumed:
