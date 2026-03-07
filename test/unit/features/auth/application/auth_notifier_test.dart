@@ -2,20 +2,36 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:unvault/src/features/auth/application/auth_notifier.dart';
+import 'package:unvault/src/features/auth/application/brute_force_notifier.dart';
 import 'package:unvault/src/features/auth/data/auth_repository.dart';
+import 'package:unvault/src/features/auth/data/brute_force_repository.dart';
 import 'package:unvault/src/features/auth/domain/auth_state.dart';
+import 'package:unvault/src/features/auth/domain/brute_force_state.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
+
+class MockBruteForceRepository extends Mock implements BruteForceRepository {}
 
 void main() {
   late ProviderContainer container;
   late MockAuthRepository mockRepo;
+  late MockBruteForceRepository mockBfRepo;
 
   setUp(() {
     mockRepo = MockAuthRepository();
+    mockBfRepo = MockBruteForceRepository();
+    when(() => mockBfRepo.getState())
+        .thenAnswer((_) async => BruteForceState.initial);
+    when(() => mockBfRepo.recordSuccess())
+        .thenAnswer((_) async => BruteForceState.initial);
+    when(() => mockBfRepo.recordFailure()).thenAnswer(
+      (_) async =>
+          const BruteForceState(failedAttempts: 1, lockoutUntil: null),
+    );
     container = ProviderContainer(
       overrides: [
         authRepositoryProvider.overrideWithValue(mockRepo),
+        bruteForceRepositoryProvider.overrideWithValue(mockBfRepo),
       ],
     );
   });

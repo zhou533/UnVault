@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unvault/src/core/providers/app_providers.dart';
 import 'package:unvault/src/core/services/secure_storage_service.dart';
+import 'package:unvault/src/features/auth/application/brute_force_notifier.dart';
 import 'package:unvault/src/features/auth/data/auth_repository.dart';
 import 'package:unvault/src/features/auth/domain/auth_state.dart';
 
@@ -14,21 +15,40 @@ class AuthNotifier extends _$AuthNotifier {
   Future<void> checkAuthState() async {
     final repo = ref.read(authRepositoryProvider);
     final isFirst = await repo.isFirstLaunch();
-    state = isFirst ? const AuthState.firstLaunch() : const AuthState.locked();
+    if (isFirst) {
+      state = const AuthState.firstLaunch();
+    } else {
+      state = const AuthState.locked();
+      await ref.read(bruteForceProvider.notifier).loadState();
+    }
   }
 
   Future<void> unlock({
     required int walletId,
     required List<int> passwordBytes,
   }) async {
+    final bfNotifier = ref.read(bruteForceProvider.notifier);
+    final bfState = ref.read(bruteForceProvider);
+
+    // Block unlock attempts when locked out
+    if (bfState.isLockedOut) {
+      state = const AuthState.error('Too many attempts. Please wait.');
+      return;
+    }
+
     final repo = ref.read(authRepositoryProvider);
     final ok = await repo.verifyPassword(
       walletId: walletId,
       passwordBytes: passwordBytes,
     );
-    state = ok
-        ? const AuthState.unlocked()
-        : const AuthState.error('Incorrect password');
+
+    if (ok) {
+      await bfNotifier.onSuccess();
+      state = const AuthState.unlocked();
+    } else {
+      await bfNotifier.onFailure();
+      state = const AuthState.error('Incorrect password');
+    }
   }
 
   void lock() {
