@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use alloy_consensus::transaction::RlpEcdsaEncodableTx;
-use alloy_consensus::TxEip1559;
+use alloy_consensus::{TxEip1559, TxLegacy};
 use alloy_network::TxSignerSync;
 use alloy_primitives::Address;
 use alloy_signer_local::PrivateKeySigner;
@@ -64,12 +64,49 @@ pub fn sign_eip1559(private_key: &[u8], tx: &TxEip1559) -> Result<SignedTransact
     Ok(SignedTransaction { raw_tx, tx_hash, from })
 }
 
+/// Signs a legacy transaction with the given private key.
+///
+/// SECURITY: Same guarantees as `sign_eip1559` — key is zeroized after signing.
+///
+/// # Errors
+/// - `TransactionSign` if the private key is invalid or signing fails.
+pub fn sign_legacy(private_key: &[u8], tx: &TxLegacy) -> Result<SignedTransaction> {
+    if private_key.len() != 32 {
+        return Err(UnvaultError::TransactionSign("private key must be 32 bytes".into()));
+    }
+
+    let mut key_bytes = [0u8; 32];
+    key_bytes.copy_from_slice(private_key);
+
+    let signer = PrivateKeySigner::from_slice(&key_bytes)
+        .map_err(|e| UnvaultError::TransactionSign(e.to_string()))?;
+
+    key_bytes.zeroize();
+
+    let from = signer.address();
+
+    let mut tx_clone = tx.clone();
+    let signature = signer
+        .sign_transaction_sync(&mut tx_clone)
+        .map_err(|e: alloy_signer::Error| UnvaultError::TransactionSign(e.to_string()))?;
+
+    let encoded_len = tx.eip2718_encoded_length(&signature);
+    let mut raw_tx = Vec::with_capacity(encoded_len);
+    tx.eip2718_encode(&signature, &mut raw_tx);
+
+    let tx_hash: [u8; 32] = tx.tx_hash(&signature).into();
+
+    Ok(SignedTransaction { raw_tx, tx_hash, from })
+}
+
 #[cfg(test)]
 mod tests {
     use alloy_primitives::U256;
 
     use super::*;
-    use crate::transaction::builder::{build_eip1559, TransactionParams};
+    use crate::transaction::builder::{
+        build_eip1559, build_legacy, LegacyTransactionParams, TransactionParams,
+    };
 
     fn test_key() -> [u8; 32] {
         // Deterministic test key — NEVER use in production.
@@ -146,6 +183,65 @@ mod tests {
         let expected_addr = signer.address();
 
         let signed = sign_eip1559(&key, &tx).unwrap();
+        assert_eq!(signed.from, expected_addr);
+    }
+
+    fn test_legacy_tx() -> TxLegacy {
+        let params = LegacyTransactionParams {
+            chain_id: 56, // BSC
+            nonce: 0,
+            to: Some(Address::ZERO),
+            value: U256::from(1_000_000_000_000_000_000u128),
+            input: vec![],
+            gas_limit: 21_000,
+            gas_price: 5_000_000_000,
+        };
+        build_legacy(&params).unwrap()
+    }
+
+    #[test]
+    fn sign_legacy_produces_valid_result() {
+        let key = test_key();
+        let tx = test_legacy_tx();
+
+        let signed = sign_legacy(&key, &tx).unwrap();
+
+        assert!(!signed.raw_tx.is_empty());
+        assert_ne!(signed.tx_hash, [0u8; 32]);
+        assert_ne!(signed.from, Address::ZERO);
+    }
+
+    #[test]
+    fn sign_legacy_deterministic() {
+        let key = test_key();
+        let tx = test_legacy_tx();
+
+        let s1 = sign_legacy(&key, &tx).unwrap();
+        let s2 = sign_legacy(&key, &tx).unwrap();
+
+        assert_eq!(s1.raw_tx, s2.raw_tx);
+        assert_eq!(s1.tx_hash, s2.tx_hash);
+    }
+
+    #[test]
+    fn sign_legacy_invalid_key_length() {
+        let short_key = [0u8; 16];
+        let tx = test_legacy_tx();
+
+        let result = sign_legacy(&short_key, &tx);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), UnvaultError::TransactionSign(_)));
+    }
+
+    #[test]
+    fn sign_legacy_from_matches_key() {
+        let key = test_key();
+        let tx = test_legacy_tx();
+
+        let signer = PrivateKeySigner::from_slice(&key).unwrap();
+        let expected_addr = signer.address();
+
+        let signed = sign_legacy(&key, &tx).unwrap();
         assert_eq!(signed.from, expected_addr);
     }
 }

@@ -87,6 +87,54 @@ pub struct SignTransactionResponse {
     pub from: String,
 }
 
+/// Builds and signs a legacy (pre-EIP-1559) transaction.
+///
+/// Used for chains that don't support EIP-1559 (e.g., BSC, Avalanche).
+///
+/// SECURITY: Same guarantees as `sign_transaction`.
+#[allow(clippy::too_many_arguments)]
+pub fn sign_legacy_transaction(
+    private_key: Vec<u8>,
+    chain_id: u64,
+    nonce: u64,
+    to: String,
+    value_wei: String,
+    input: Vec<u8>,
+    gas_limit: u64,
+    gas_price: u128,
+) -> Result<SignTransactionResponse> {
+    let to_addr = if to.is_empty() {
+        None
+    } else {
+        Some(
+            to.parse::<Address>()
+                .map_err(|e| UnvaultError::TransactionBuild(format!("invalid to address: {e}")))?,
+        )
+    };
+
+    let value = U256::from_str_radix(value_wei.trim_start_matches("0x"), 10)
+        .map_err(|e| UnvaultError::TransactionBuild(format!("invalid value: {e}")))?;
+
+    let params = builder::LegacyTransactionParams {
+        chain_id,
+        nonce,
+        to: to_addr,
+        value,
+        input,
+        gas_limit,
+        gas_price,
+    };
+
+    let unsigned_tx = builder::build_legacy(&params)?;
+    let signed = signer::sign_legacy(&private_key, &unsigned_tx)?;
+
+    Ok(SignTransactionResponse {
+        raw_tx: signed.raw_tx,
+        tx_hash: signed.tx_hash.to_vec(),
+        from: signed.from.to_checksum(None),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,6 +227,57 @@ mod tests {
             21_000,
             30_000_000_000,
             1_500_000_000,
+        );
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn sign_legacy_transaction_succeeds() {
+        let response = sign_legacy_transaction(
+            test_key(),
+            56, // BSC
+            0,
+            "0x0000000000000000000000000000000000000000".into(),
+            "1000000000000000000".into(),
+            vec![],
+            21_000,
+            5_000_000_000, // 5 Gwei
+        )
+        .unwrap();
+
+        assert!(!response.raw_tx.is_empty());
+        assert_eq!(response.tx_hash.len(), 32);
+        assert!(response.from.starts_with("0x"));
+    }
+
+    #[test]
+    fn sign_legacy_transaction_invalid_key() {
+        let result = sign_legacy_transaction(
+            vec![0; 16],
+            56,
+            0,
+            "0x0000000000000000000000000000000000000000".into(),
+            "1000000000000000000".into(),
+            vec![],
+            21_000,
+            5_000_000_000,
+        );
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn sign_legacy_transaction_zero_gas_price_fails() {
+        let result = sign_legacy_transaction(
+            test_key(),
+            56,
+            0,
+            "0x0000000000000000000000000000000000000000".into(),
+            "0".into(),
+            vec![],
+            21_000,
+            0, // zero gas price
         );
 
         assert!(result.is_err());
