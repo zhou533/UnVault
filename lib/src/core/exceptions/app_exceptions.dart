@@ -28,3 +28,8 @@ class WalletLimitException extends AppException {
   const WalletLimitException()
       : super('Maximum of 10 wallets reached');
 }
+
+class AccountLimitException extends AppException {
+  const AccountLimitException()
+      : super('Maximum of 20 accounts per wallet reached');
+}

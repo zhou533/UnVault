@@ -2,9 +2,11 @@ import 'dart:typed_data';
 
 import 'package:drift/drift.dart';
 import 'package:unvault/src/core/database/app_database.dart';
+import 'package:unvault/src/core/database/daos/accounts_dao.dart';
 import 'package:unvault/src/core/database/daos/wallets_dao.dart';
 import 'package:unvault/src/core/exceptions/app_exceptions.dart';
 import 'package:unvault/src/core/services/secure_storage_service.dart';
+import 'package:unvault/src/features/wallet/domain/account_model.dart';
 import 'package:unvault/src/features/wallet/domain/wallet_model.dart';
 import 'package:unvault/src/rust/api/wallet_api.dart' as rust_wallet;
 
@@ -12,11 +14,17 @@ class WalletRepository {
   const WalletRepository({
     required WalletsDao dao,
     required SecureStorageService storage,
+    AccountsDao? accountsDao,
   })  : _dao = dao,
-        _storage = storage;
+        _storage = storage,
+        _accountsDao = accountsDao;
 
   final WalletsDao _dao;
   final SecureStorageService _storage;
+  final AccountsDao? _accountsDao;
+
+  static const maxWallets = 10;
+  static const maxAccountsPerWallet = 20;
 
   Future<List<WalletModel>> getWallets() async {
     final rows = await _dao.getAllWallets();
@@ -31,12 +39,6 @@ class WalletRepository {
         .toList();
   }
 
-  /// Creates a new wallet: calls Rust to generate mnemonic + encrypt it,
-  /// stores encrypted bytes in secure storage, saves wallet row in DB.
-  ///
-  /// Returns the new wallet's ID and the mnemonic bytes (zeroized by caller).
-  static const maxWallets = 10;
-
   Future<WalletCreationResult> createWallet({
     required String name,
     required List<int> passwordBytes,
@@ -45,18 +47,15 @@ class WalletRepository {
     if (passwordBytes.length < 8) throw const PasswordTooShortException();
     await _enforceWalletLimit();
 
-    // 1. Call Rust FFI to create wallet
     final response = await rust_wallet.createWallet(
       password: passwordBytes,
       wordCount: wordCount,
     );
 
-    // 2. Insert wallet row into DB
     final walletId = await _dao.insertWallet(
       WalletsCompanion.insert(name: name),
     );
 
-    // 3. Store encrypted credentials in secure storage
     await _storage.storeWalletCredentials(
       walletId: walletId,
       encryptedMnemonic: response.encryptedMnemonic,
@@ -66,7 +65,6 @@ class WalletRepository {
       argon2Parallelism: response.argon2Parallelism,
     );
 
-    // 4. Return result including mnemonic bytes for backup display
     return WalletCreationResult(
       walletId: walletId,
       firstAddress: response.firstAddress,
@@ -74,7 +72,6 @@ class WalletRepository {
     );
   }
 
-  /// Imports a wallet from an existing mnemonic phrase.
   Future<WalletCreationResult> importWallet({
     required String name,
     required List<int> phraseBytes,
@@ -116,6 +113,41 @@ class WalletRepository {
 
   Future<void> setActiveWalletId(int walletId) =>
       _storage.storeActiveWalletId(walletId);
+
+  // --- Account management ---
+
+  Future<List<AccountModel>> getAccountsForWallet(int walletId) async {
+    final dao = _accountsDao;
+    if (dao == null) return [];
+    final rows = await dao.getAccountsForWallet(walletId);
+    return rows
+        .map((a) => AccountModel(
+              id: a.id,
+              walletId: a.walletId,
+              derivationIndex: a.derivationIndex,
+              address: a.address,
+              name: a.name,
+            ))
+        .toList();
+  }
+
+  Future<int> addAccount({
+    required int walletId,
+    required String address,
+    required int derivationIndex,
+    String? name,
+  }) async {
+    final dao = _accountsDao!;
+    final count = await dao.countAccountsForWallet(walletId);
+    if (count >= maxAccountsPerWallet) throw const AccountLimitException();
+
+    return dao.insertAccount(AccountsCompanion.insert(
+      walletId: walletId,
+      derivationIndex: derivationIndex,
+      address: address,
+      name: Value(name),
+    ));
+  }
 
   Future<void> _enforceWalletLimit() async {
     final count = await _dao.countWallets();

@@ -14,8 +14,10 @@ Future<List<WalletModel>> walletList(Ref ref) async {
 
 @Riverpod(keepAlive: true)
 WalletRepository walletRepository(Ref ref) {
+  final db = ref.watch(appDatabaseProvider);
   return WalletRepository(
-    dao: ref.watch(appDatabaseProvider).walletsDao,
+    dao: db.walletsDao,
+    accountsDao: db.accountsDao,
     storage: ref.watch(secureStorageServiceProvider),
   );
 }
