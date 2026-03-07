@@ -149,6 +149,19 @@ class WalletRepository {
     ));
   }
 
+
+  Future<void> deleteWallet({required int walletId}) async {
+    final count = await _dao.countWallets();
+    if (count <= 1) throw const LastWalletException();
+
+    final dao = _accountsDao;
+    if (dao != null) {
+      await dao.deleteAccountsForWallet(walletId);
+    }
+    await _dao.deleteWallet(walletId);
+    await _storage.deleteWalletCredentials(walletId: walletId);
+  }
+
   Future<void> _enforceWalletLimit() async {
     final count = await _dao.countWallets();
     if (count >= maxWallets) throw const WalletLimitException();

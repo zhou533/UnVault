@@ -33,3 +33,8 @@ class AccountLimitException extends AppException {
   const AccountLimitException()
       : super('Maximum of 20 accounts per wallet reached');
 }
+
+class LastWalletException extends AppException {
+  const LastWalletException()
+      : super('Cannot delete the last wallet');
+}

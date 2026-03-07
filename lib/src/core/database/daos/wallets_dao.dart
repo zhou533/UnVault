@@ -28,4 +28,8 @@ class WalletsDao extends DatabaseAccessor<AppDatabase> with _$WalletsDaoMixin {
       readsFrom: {wallets},
     ).map((row) => row.read<int>('count')).getSingle();
   }
+
+  Future<void> deleteWallet(int id) async {
+    await (delete(wallets)..where((w) => w.id.equals(id))).go();
+  }
 }
